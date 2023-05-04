@@ -1,0 +1,19 @@
+folder_path: C:/Users/User/DNA_PAINT_for_revision/B6_comp_dist_vs_prox/concavity_1_collected/
+
+# Colors and conditions should be in corresponding order. HEX colours can be submitted, e.g., "#FF0000".
+
+colors:
+  - "#FF0000"
+  - blue
+
+conditions:
+  - B6_proximal
+  - B6_distal
+
+control_condition: B6_proximal
+
+distribution_plot:
+  xintercept: median
+  width: 5
+  height: 2.5
+
