@@ -147,6 +147,11 @@ folder_regexp <- config$folder_regexp
 
 # Set working paths
 setwd(folder_path)
+
+# IMPORTANT
+# files_to_remove <- list.files(path = folder_path, pattern = "\\.(png|svg)$", recursive = TRUE, full.names = TRUE)
+# file.remove(files_to_remove)
+
 output_dir <- paste("../concavity_", concavity, "_collected", sep="")
 dir.create(output_dir)
 cell_folders <- Sys.glob(file.path(folder_regexp))
@@ -245,6 +250,7 @@ for (cell in cell_folders) {
       geom_path(aes(color = `Filament ID`), size = 1.2, lineend = "round", linejoin = "round") +
       scale_color_manual(values = cols) +
       theme_void() +
+      scale_y_reverse() +
       theme(
         legend.position = "none",
         panel.border = element_blank(),
@@ -299,6 +305,7 @@ for (cell in cell_folders) {
       geom_path(data = as.data.frame(chord), aes(x = Y, y = X), color = "green", size = 1.2, lineend = "round", linejoin = "round") +
       scale_color_manual(values = c("white", "red", "green")) +
       theme_void() +
+      scale_y_reverse() +
       theme(
         legend.position = "none",
         panel.border = element_blank(),
@@ -368,6 +375,7 @@ for (cell in cell_folders) {
       geom_point(data = junct_df_long_all, aes(x = Coord.x, y = Coord.y, group = `Filament ID`), size = 1.5, color = "red") +
       scale_color_manual(values = c("white", "red")) +
       theme_void() +
+      scale_y_reverse() +
       theme(
         legend.position = "none",
         panel.border = element_blank(),
