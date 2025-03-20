@@ -254,14 +254,14 @@ df_for_plot_mean_by_cell <- merge(df_for_plot_mean, unique(data_merge[c("Name", 
 df_for_plot_mean_by_cell <- df_for_plot_mean_by_cell %>%
   arrange(Condition)
 
-write.table(df_for_plot_mean_by_cell, "means_by_cell.csv", sep = ";",dec = '.', row.names = FALSE, col.names = TRUE)
+writexl::write_xlsx(df_for_plot_mean_by_cell, "means_by_cell.xlsx")
 
 # Create plots for each variable
 cell_plots <- lapply(variables, function(x) {
   make_plot(df_for_plot_mean_by_cell, x$var, x$label, control_condition, x$limits)
 })
 
-# ----------------------------------------
+# ---------------------------------------------------------------------------- #
 
 # Aggregate by region
 data_merge$`Cell region` <- paste(data_merge$Name, data_merge$Region)
@@ -290,14 +290,14 @@ df_for_plot_mean_by_region <- merge(df_for_plot_mean, unique(data_merge[c("Cell 
 df_for_plot_mean_by_region <- df_for_plot_mean_by_region %>%
   arrange(Condition)
 
-write.table(df_for_plot_mean_by_region, "mean_by_region.csv", sep = ";",dec = '.', row.names = FALSE, col.names = TRUE)
+writexl::write_xlsx(df_for_plot_mean_by_region, "mean_by_region.xlsx")
 
 # Create plots for each variable
 region_plots <- lapply(variables, function(x) {
   make_plot(df_for_plot_mean_by_region, x$var, x$label, control_condition, x$limits)
 })
 
-# ----------------------------------------
+# ---------------------------------------------------------------------------- #
 
 # Display and save plots in a grid (for both cell and region)
 ggsave("means_by_cell.png", grid.arrange(grobs = cell_plots, ncol = 4), width = 10, height = 12)
