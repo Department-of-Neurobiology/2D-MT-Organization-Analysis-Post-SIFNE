@@ -254,7 +254,42 @@ df_for_plot_mean_by_cell <- merge(df_for_plot_mean, unique(data_merge[c("Name", 
 df_for_plot_mean_by_cell <- df_for_plot_mean_by_cell %>%
   arrange(Condition)
 
-writexl::write_xlsx(df_for_plot_mean_by_cell, "means_by_cell.xlsx")
+# ---------------------------------------------------------------------------- #
+
+var_list <- setdiff(names(df_for_plot_mean_by_cell), "Condition")
+
+data_list <- purrr::map(var_list, function(col_name) {
+  temp <- df_for_plot_mean_by_cell %>%
+    dplyr::select(Condition, all_of(col_name))
+  
+  # Flatten list columns by collapsing into a comma-separated string
+  if (any(purrr::map_lgl(temp[[col_name]], is.list))) {
+    temp[[col_name]] <- purrr::map_chr(temp[[col_name]], ~ paste(.x, collapse = ","))
+  } else {
+    if (all(purrr::map_lgl(temp[[col_name]], ~ stringr::str_detect(.x, "^[-+]?[0-9]*\\.?[0-9]+$")))) {
+      temp[[col_name]] <- as.numeric(temp[[col_name]])
+    } else {
+      temp[[col_name]] <- as.character(temp[[col_name]])
+    }
+  }
+  
+  temp <- temp %>%
+    dplyr::group_by(Condition) %>%
+    dplyr::mutate(row_id = dplyr::row_number()) %>%
+    dplyr::ungroup()
+  
+  temp %>%
+    tidyr::pivot_wider(names_from = Condition, values_from = all_of(col_name)) %>%
+    dplyr::select(-row_id)
+})
+
+names(data_list) <- var_list
+
+writexl::write_xlsx(data_list, path = "cell_means_by_cell.xlsx")
+
+# ---------------------------------------------------------------------------- #
+
+# writexl::write_xlsx(df_for_plot_mean_by_cell, "means_by_cell.xlsx")
 
 # Create plots for each variable
 cell_plots <- lapply(variables, function(x) {
@@ -290,7 +325,42 @@ df_for_plot_mean_by_region <- merge(df_for_plot_mean, unique(data_merge[c("Cell 
 df_for_plot_mean_by_region <- df_for_plot_mean_by_region %>%
   arrange(Condition)
 
-writexl::write_xlsx(df_for_plot_mean_by_region, "mean_by_region.xlsx")
+# ---------------------------------------------------------------------------- #
+
+var_list <- setdiff(names(df_for_plot_mean_by_region), "Condition")
+
+data_list <- purrr::map(var_list, function(col_name) {
+  temp <- df_for_plot_mean_by_region %>%
+    dplyr::select(Condition, all_of(col_name))
+  
+  # Flatten list columns by collapsing into a comma-separated string
+  if (any(purrr::map_lgl(temp[[col_name]], is.list))) {
+    temp[[col_name]] <- purrr::map_chr(temp[[col_name]], ~ paste(.x, collapse = ","))
+  } else {
+    if (all(purrr::map_lgl(temp[[col_name]], ~ stringr::str_detect(.x, "^[-+]?[0-9]*\\.?[0-9]+$")))) {
+      temp[[col_name]] <- as.numeric(temp[[col_name]])
+    } else {
+      temp[[col_name]] <- as.character(temp[[col_name]])
+    }
+  }
+  
+  temp <- temp %>%
+    dplyr::group_by(Condition) %>%
+    dplyr::mutate(row_id = dplyr::row_number()) %>%
+    dplyr::ungroup()
+  
+  temp %>%
+    tidyr::pivot_wider(names_from = Condition, values_from = all_of(col_name)) %>%
+    dplyr::select(-row_id)
+})
+
+names(data_list) <- var_list
+
+writexl::write_xlsx(data_list, path = "cell_means_by_region.xlsx")
+
+# ---------------------------------------------------------------------------- #
+
+# writexl::write_xlsx(df_for_plot_mean_by_region, "mean_by_region.xlsx")
 
 # Create plots for each variable
 region_plots <- lapply(variables, function(x) {
