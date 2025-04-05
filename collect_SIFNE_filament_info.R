@@ -1,10 +1,10 @@
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------------- #-----------------------
 # Script Name: collect_SIFNE_filament_info.R
 # Purpose: Collect data from SIFNE analysis output
 # Author: Nataliya Trushina
 # Date: 2022-06-10
 # Last Modified: 2023-05-03
-# --------------------------------------------------------------
+# ---------------------------------------------------------------------------- #-----------------------
 
 # Requirements: 
 # config_1.yaml file in the directory of this R script.
@@ -158,8 +158,8 @@ cell_folders <- Sys.glob(file.path(folder_regexp))
 
 all_info <- {}
 for (cell in cell_folders) {
+  # cell <- "20220407_PC12_flagTauPHP_w122_h382"
   print(cell)
-  # cell <- "20221108_B6_pos3_w529_h639_MAX_colored_15_18"
   setwd(paste(folder_path, cell, sep=""))
   region_folders <- Sys.glob(file.path("R*"))
   
@@ -225,27 +225,9 @@ for (cell in cell_folders) {
     set.seed(analysis_date)
     cols = rainbow(nlevels(filament_df_long_all$`Filament ID`), s=.6, v=.9)[sample(1:nlevels(filament_df_long_all$`Filament ID`), nlevels(filament_df_long_all$`Filament ID`))]
     
-    # ---------------------------------------
+    # ---------------------------------------------------------------------------- #------------------------------------- #
     
     # Plot 1: Visualize filaments in random colors
-    # p_filaments <- ggplot(filament_df_long_all, aes(x = Coord.y, y = Coord.x, group = `Filament ID`)) +
-    #   geom_path(aes(color=`Filament ID`), size=1.2) +
-    #   theme_black() +
-    #   scale_color_manual(values=cols) +
-    #   scale_y_reverse() +
-    #   theme(
-    #     axis.text.x = element_blank(),
-    #     axis.text.y = element_blank(),
-    #     axis.ticks = element_blank(),
-    #     axis.title.x = element_blank(),
-    #     axis.title.y = element_blank(),
-    #     panel.grid.major = element_blank(),
-    #     panel.grid.minor = element_blank(),
-    #     legend.position = "none"
-    #   )
-    # 
-    # save_plot(p_filaments, "filaments", cell, region, p_height, p_width)
-    
     p_filaments <- ggplot(filament_df_long_all, aes(x = Coord.y, y = Coord.x, group = `Filament ID`)) +
       geom_path(aes(color = `Filament ID`), size = 1.2, lineend = "round", linejoin = "round") +
       scale_color_manual(values = cols) +
@@ -260,18 +242,18 @@ for (cell in cell_folders) {
     
     save_plot(p_filaments, "filaments", cell, region, p_height, p_width)
     
-    # ---------------------------------------
+    # ---------------------------------------------------------------------------- #
     
     # Area calculation
     dat <- as.matrix(filament_df_long_all[c("Coord.x", "Coord.y")])
     
     # Calculate the concave hull using the given coordinates
-    ch <- concave_hull(dat, concavity = 3, length_threshold = 0)
+    ch <- concave_hull(dat, concavity = concavity, length_threshold = 0)
     coords <- ch
     colnames(coords) <- c("Coord.x", "Coord.y")
     
     # Create a polygon object from the concave hull coordinates
-    chull.poly <- Polygon(coords, hole = F)
+    chull.poly <- Polygon(coords, hole = FALSE)
     chull.area <- chull.poly@area
     
     # Convert the coordinates to a polygon object for further processing
@@ -280,30 +262,65 @@ for (cell in cell_folders) {
     # Calculate the maximum chord of the polygon
     chord <- max_chord(polygon)
     
-    # Plot 2: Visualize the concave hull and maximum chord on the image
-    # p_concave_hull <- ggplot(filament_df_long_all, aes(x = Coord.y, y = Coord.x)) +
-    #   geom_path(aes(x = Coord.y, y = Coord.x, group = `Filament ID`), color="white", size=1.2) +
-    #   geom_path(data = as.data.frame(coords), aes(x = Coord.y, y = Coord.x), color="red", size=1.2) +
-    #   geom_path(data = as.data.frame(chord), aes(x = Y, y = X), color="green", size=1.2) +
-    #   theme_black() +
-    #   scale_y_reverse() +
-    #   theme(
-    #     axis.text.x = element_blank(),
-    #     axis.text.y = element_blank(),
-    #     axis.ticks = element_blank(),
-    #     axis.title.x = element_blank(),
-    #     axis.title.y = element_blank(),
-    #     panel.grid.major = element_blank(),
-    #     panel.grid.minor = element_blank()
-    #   )
-    # 
-    # save_plot(p_concave_hull, "area_calc", cell, region, p_height, p_width)
+    # ---------------------------------------------------------------------------- #
     
+    # # Fit a smooth spline curve
+    smooth_fit <- smooth.spline(filament_df_long_all$Coord.x, filament_df_long_all$Coord.y, spar = 0.7) # spar controls smoothness
+    
+    smoothed_line_spline <- predict(smooth_fit, x = seq(min(filament_df_long_all$Coord.x), max(filament_df_long_all$Coord.x), length.out = 500))
+    
+    smoothed_line_spline_df <- data.frame(x = smoothed_line_spline$x, y = smoothed_line_spline$y)
+    
+    # # Plot the result
+    # ggplot() +
+    #   geom_point(aes(x = filament_df_long_all$Coord.x, y = filament_df_long_all$Coord.y), color = "black") +
+    #   geom_point(aes(x = coords$Coord.x, y = coords$Coord.y), color = "red") +
+    #   geom_line(aes(x = smooth_fit$x, y = smooth_fit$y), color = "yellow", size = 1.2) +
+    #   theme_minimal()
+    # 
+    # # Assuming 'smooth_fit' is the object from smooth.spline or the fitted line from loess
+    # curve_points <- data.frame(x = smooth_fit$x, y = smooth_fit$y)
+    # 
+    # # Calculate the Euclidean distance between consecutive points
+    # distances <- sqrt(diff(curve_points$x)^2 + diff(curve_points$y)^2)
+    # 
+    # # Total length of the curve
+    # total_length <- sum(distances)
+    # total_length  # Use instead of as.numeric(dist(chord)), however loess is preferred to avoid overfitting
+    
+    # ---------------------------------------------------------------------------- #
+    
+    # Fit a loess model
+    loess_fit <- loess(Coord.y ~ Coord.x, data = filament_df_long_all)
+    
+    # Generate a smooth line from the loess model
+    smoothed_y <- predict(loess_fit, newdata = data.frame(Coord.x = seq(min(filament_df_long_all$Coord.x), max(filament_df_long_all$Coord.x), length.out = 500)))
+    
+    # Create a data frame with the x values (the sequence) and the corresponding predicted y values
+    smoothed_line <- data.frame(x = seq(min(filament_df_long_all$Coord.x), max(filament_df_long_all$Coord.x), length.out = 500), y = smoothed_y)
+    
+    # # Plot the result
+    # ggplot() +
+    #   geom_point(aes(x = filament_df_long_all$Coord.x, y = filament_df_long_all$Coord.y), color = "black") +
+    #   geom_point(aes(x = coords$Coord.x, y = coords$Coord.y), color = "red") +
+    #   geom_line(data = smoothed_line, aes(x = x, y = y), color = "yellow", size = 1.2) +
+    #   theme_minimal()
+    
+    # Calculate the Euclidean distance between consecutive points
+    distances <- sqrt(diff(smoothed_line$x)^2 + diff(smoothed_line$y)^2)
+    
+    # Total length of the curve
+    region_length_loess <- sum(distances)
+    
+    # ---------------------------------------------------------------------------- #
+    
+    # Plot 2: Visualize the concave hull and maximum chord on the image
     p_concave_hull <- ggplot(filament_df_long_all, aes(x = Coord.y, y = Coord.x)) +
       geom_path(aes(group = `Filament ID`), color = "white", size = 1.2, lineend = "round", linejoin = "round") +
       geom_path(data = as.data.frame(coords), aes(x = Coord.y, y = Coord.x), color = "red", size = 1.2, lineend = "round", linejoin = "round") +
+      geom_path(data = smoothed_line_spline_df, aes(x = y, y = x), color = "gray", size = 1.2, lineend = "round", linejoin = "round") +
       geom_path(data = as.data.frame(chord), aes(x = Y, y = X), color = "green", size = 1.2, lineend = "round", linejoin = "round") +
-      scale_color_manual(values = c("white", "red", "green")) +
+      geom_path(data = smoothed_line, aes(x = y, y = x), color = "yellow", size = 1.2, lineend = "round", linejoin = "round") +
       theme_void() +
       scale_y_reverse() +
       theme(
@@ -313,9 +330,10 @@ for (cell in cell_folders) {
         panel.grid.minor = element_blank()
       )
     
+    print(p_concave_hull)
     save_plot(p_concave_hull, "area_calc", cell, region, p_height, p_width)
     
-    # ---------------------------------------
+    # ---------------------------------------------------------------------------- #
     
     # Junction count calculation
     junction_df <- full_df[toDelete_2, ]
@@ -353,23 +371,6 @@ for (cell in cell_folders) {
     junct_df_long_all <- junct_df_long_all[!duplicated(junct_df_long_all[c("Coord.x","Coord.y")]),]
     
     # Plot 3: Visualize filaments and junctions
-    # p_junc <- ggplot(filament_df_long_all, aes(x = Coord.y, y = Coord.x, group = `Filament ID`)) +
-    #   geom_path(color="white", size=1.2) +
-    #   geom_point(data = junct_df_long_all, aes(x = Coord.x, y = Coord.y, group = `Filament ID`), size=1.5, color="red") +
-    #   theme_black() +
-    #   scale_y_reverse() +
-    #   theme(
-    #     axis.text.x = element_blank(),
-    #     axis.text.y = element_blank(),
-    #     axis.ticks = element_blank(),
-    #     axis.title.x = element_blank(),
-    #     axis.title.y = element_blank(),
-    #     panel.grid.major = element_blank(),
-    #     panel.grid.minor = element_blank()
-    #   )
-    # 
-    # save_plot(p_junc, "junctions", cell, region, p_height, p_width)
-    
     p_junc <- ggplot(filament_df_long_all, aes(x = Coord.y, y = Coord.x, group = `Filament ID`)) +
       geom_path(color = "white", size = 1.2, lineend = "round", linejoin = "round") +
       geom_point(data = junct_df_long_all, aes(x = Coord.x, y = Coord.y, group = `Filament ID`), size = 1.5, color = "red") +
@@ -385,7 +386,7 @@ for (cell in cell_folders) {
     
     save_plot(p_junc, "junctions", cell, region, p_height, p_width)
     
-    # ---------------------------------------
+    # ---------------------------------------------------------------------------- #
     
     # Organizing data for export
     filament_df_w_jun <- merge(filament_df, junction_df[c("Filament ID", "Junction count")], by = "Filament ID")
@@ -404,10 +405,19 @@ for (cell in cell_folders) {
     new_all_info$`MT density` <- new_all_info$`Number of MTs`/new_all_info$`Area um^2`
     new_all_info$`MT mass` <- sum(new_all_info$`Total Length um`)/new_all_info$`Area um^2`
     new_all_info$`MT mass Eike` <- new_all_info$`Number of MTs`*mean(new_all_info$`Total Length um`)/new_all_info$`Area um^2`
-    new_all_info$`Region length` <- as.numeric(dist(chord)) * 0.026
-    new_all_info$`MT density by region length` <- new_all_info$`Number of MTs`/as.numeric(dist(chord))
-    new_all_info$`MT mass by region length` <- sum(new_all_info$`Total Length um`)/as.numeric(dist(chord))
-    new_all_info$`MT mass by region length Eike` <- new_all_info$`Number of MTs`*mean(new_all_info$`Total Length um`)/as.numeric(dist(chord))
+    
+    new_all_info$`Region length (OLD)` <- as.numeric(dist(chord)) * 0.026
+    new_all_info$`MT density by region length (OLD, not*0.026)` <- new_all_info$`Number of MTs`/as.numeric(dist(chord))
+    new_all_info$`MT mass by region length (OLD, not*0.026)` <- sum(new_all_info$`Total Length um`)/as.numeric(dist(chord))
+    new_all_info$`MT mass by region length Eike (OLD, not*0.026)` <- new_all_info$`Number of MTs`*mean(new_all_info$`Total Length um`)/as.numeric(dist(chord))
+    
+    
+    new_all_info$`Region length (loess)` <- as.numeric(dist(chord)) * 0.026
+    new_all_info$`MT density by region length (loess)` <- new_all_info$`Number of MTs`/new_all_info$`Region length (loess)`
+    new_all_info$`MT mass (summ of MT lengths) by region length (loess)` <- sum(new_all_info$`Total Length um`)/new_all_info$`Region length (loess)`
+    new_all_info$`MT mass (MT number * mean of MT lengths) by region length (loess)` <- new_all_info$`Number of MTs`*mean(new_all_info$`Total Length um`)/new_all_info$`Region length (loess)`
+    
+    
     new_all_info$`Cell name` <- cell
     new_all_info$Genotype <- genotype
     
